@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>DDC Form</title>
+</head>
+<body>
+  <form id="collectionForm" name="devicedata" method="POST">
+    <input type="hidden" name="JWT" id="jwtInput">
+  </form>
+
+  <script>
+    window.onload = function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const jwt = urlParams.get('jwt');
+      const action = urlParams.get('action');
+      
+      if (jwt && action) {
+        document.getElementById('jwtInput').value = jwt;
+        document.getElementById('collectionForm').action = action;
+        document.getElementById('collectionForm').submit();
+      }
+    };
+    
+    // 监听来自Cardinal Commerce的消息
+    window.addEventListener('message', function(event) {
+      // 检查消息来源是否是Cardinal Commerce域名
+      const origin = event.origin;
+      const isCardinalOrigin = origin.includes('cardinalcommerce.com');
+      
+      if (!isCardinalOrigin) {
+        console.log('忽略来自未知来源的消息:', origin);
+        return false;
+      }
+      
+      // 将消息传递给父页面
+      window.parent.postMessage(event.data, '*');
+      
+      return false;
+    }, false);
+  </script>
+</body>
+</html>

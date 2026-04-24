@@ -1,0 +1,1738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PA+VPP Demo</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  </head>
+<body>
+  <div class="app">
+    <div id="home-page" class="page">
+      <div class="header">
+        <h1>Main Page</h1>
+        <div class="header-right">
+          <button onclick="navigateToConfig()" class="config-btn">Configurations</button>
+        </div>
+      </div>
+      
+      <div class="env-selector">
+        <label for="environment">Select Environment:</label>
+        <select id="environment">
+          <option value="sandbox">Sandbox</option>
+          <option value="production">Production</option>
+        </select>
+      </div>
+      
+      <div class="card-input-section">
+        <h3>Card Information</h3>
+        <div class="form-group">
+          <label for="cardNumber">Card Number</label>
+          <input type="text" id="cardNumber" placeholder="Enter card number" value="">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="expirationMonth">Expiration Month</label>
+            <select id="expirationMonth">
+              <option value="01">01</option>
+              <option value="02">02</option>
+              <option value="03">03</option>
+              <option value="04">04</option>
+              <option value="05">05</option>
+              <option value="06">06</option>
+              <option value="07">07</option>
+              <option value="08">08</option>
+              <option value="09">09</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12" selected>12</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="expirationYear">Expiration Year</label>
+            <select id="expirationYear">
+              <option value="2026" selected>2026</option>
+              <option value="2027">2027</option>
+              <option value="2028">2028</option>
+              <option value="2029">2029</option>
+              <option value="2030">2030</option>
+              <option value="2031">2031</option>
+              <option value="2032">2032</option>
+              <option value="2033">2033</option>
+              <option value="2034">2034</option>
+              <option value="2035">2035</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <div id="message" class="message"></div>
+      
+      <iframe 
+        id="fidoInitIframe"
+        name="fido_initialize" 
+        title="FIDO Initialization iframe" 
+        sandbox="allow-forms allow-scripts allow-same-origin allow-pointer-lock allow-popups" 
+        allow="payment *; publickey-credentials-get *; publickey-credentials-create *" 
+        height="10" 
+        width="10" 
+        aria-hidden="true" 
+        style="visibility: hidden; position: absolute; top: -1000px; left: -1000px;">
+      </iframe>
+      
+      <form id="fidoInitializeForm" name="fido_initialize_form" method="POST" target="fido_initialize">
+        <input type="hidden" name="JWT" id="jwtInput" />
+      </form>
+      
+      <iframe 
+        id="ddcIframe"
+        name="ddc_collect" 
+        title="DDC Collection iframe" 
+        sandbox="allow-forms allow-scripts allow-same-origin allow-pointer-lock allow-popups" 
+        allow="payment *; publickey-credentials-get *; publickey-credentials-create *" 
+        height="10" 
+        width="10" 
+        aria-hidden="true" 
+        style="visibility: hidden; position: absolute; top: -1000px; left: -1000px;">
+      </iframe>
+      
+      <form id="collectionForm" name="devicedata" method="POST" target="ddc_collect">
+        <input type="hidden" name="JWT" id="ddcJwtInput" />
+      </form>
+      
+      <form id="step-up-form" target="step-up-iframe" method="post">
+        <input type="hidden" name="JWT" id="stepUpJwt" />
+        <input type="hidden" name="MD" id="stepUpMd" />
+      </form>
+      
+      <div class="step-section">
+        <h1>STEP.1 FIDO/Init</h1>
+        <button onclick="runFidoInit()" id="fidoInitBtn" class="primary-btn">
+          FIDO Init
+        </button>
+        <div id="message" class="message"></div>
+        <div class="result-section">
+          <h2>FIDO/Init Request</h2>
+          <div class="code-block">
+            <h3>JSON</h3>
+            <pre id="request-payload"></pre>
+          </div>
+          <div class="code-block">
+            <h3>JWT</h3>
+            <pre id="request-jwt"></pre>
+          </div>
+        </div>
+        <div class="result-section">
+          <h2>FIDO/Init Response</h2>
+          <div class="form-group">
+            <label for="jwtPayloadInput">JWT</label>
+            <textarea id="jwtPayloadInput" rows="3" placeholder="Paste FIDO/Init Response JWT..." oninput="parseFidoInitJwtPayload()"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="jsonOutput">JSON</label>
+            <textarea id="jsonOutput" rows="15" placeholder="Decoded JSON..." readonly></textarea>
+            <div id="verifyResult" class="verify-result"></div>
+          </div>
+          <div class="form-group">
+            <label for="referenceIdOutput">ReferenceId</label>
+            <input type="text" id="referenceIdOutput" placeholder="ReferenceId in JWT" readonly>
+          </div>
+        </div>
+      </div>
+      
+      <div class="step-section">
+        <h1>STEP.2 PA Setup</h1>
+        <button onclick="generatePASetupRequest()" class="primary-btn">
+          Generate PA Setup Request
+        </button>
+        <div class="result-section">
+          <h2>PA Setup Request</h2>
+          <div class="form-group">
+            <div class="textarea-with-copy">
+              <textarea id="paSetupRequest" rows="15" placeholder="Generated PA Setup Request..." readonly></textarea>
+              <button onclick="copyToClipboard('paSetupRequest')" class="copy-btn">Copy</button>
+            </div>
+          </div>
+        </div>
+        <div class="result-section">
+          <h2>PA Setup Response</h2>
+          <div class="form-group">
+            <textarea id="paSetupResponse" rows="15" placeholder="Paste PA Setup Response..." oninput="parsePASetupResponse()"></textarea>
+          </div>
+        </div>
+      </div>
+      
+      <div id="flow-indicator" class="flow-indicator" style="display: none;"></div>
+      
+      <div class="step-section">
+        <h1>STEP.3 DDC (Device Data Collection)</h1>
+        <button onclick="runDDC()" id="ddcBtn" class="primary-btn">
+          Execute DDC
+        </button>
+        <div id="ddc-message" class="message"></div>
+      </div>
+
+      <div id="vpp-enrollment-section" class="step-section" style="display: none;">
+        <h1>STEP.4 VPP Enrollment Flow - PA Enroll</h1>
+        <button onclick="generatePAEnrollRequest()" id="enrollBtn" class="primary-btn">
+            Generate PA Enroll Request
+        </button>
+        <div  class="result-section">
+          <h2>PA Enroll Request</h2>          
+          <div class="form-group">
+            <div class="textarea-with-copy">
+              <textarea id="paEnrollRequest" rows="15" placeholder="Generated PA Enroll Request..." readonly></textarea>
+              <button onclick="copyToClipboard('paEnrollRequest')" class="copy-btn">Copy</button>
+            </div>
+          </div>
+          <h2>PA Enroll Response</h2>
+          <div class="form-group">
+            <textarea id="paEnrollResponse" rows="15" placeholder="Paste PA Enroll Response..." oninput="parsePaEnrollResponse()"></textarea>
+          </div>
+        </div>
+
+        <h1>STEP.5 StepUp (Challenge)</h1>
+        <button onclick="runStepUp()" id="stepUpBtn" class="primary-btn">
+          Execute Step-Up
+        </button>
+        <div class="step-section">
+
+          <iframe 
+            name="step-up-iframe"
+            id="stepUpIframe"
+            title="Step-Up iframe"
+            height="400"
+            width="400"
+            style="display: none; border: 1px solid #e0e0e0; border-radius: 4px; margin: 20px 0;">
+          </iframe>
+        </div>
+        <h1>STEP.6 PA Validate</h1>
+        <button onclick="generatePAValidateRequest()" id="validateBtn" class="primary-btn">
+          Generate PA Validate Request
+        </button>
+        <div class="step-section">
+          <h2>PA Validate Request</h2>
+          <div class="form-group">
+            <div class="textarea-with-copy">
+              <textarea id="paValidateRequest" rows="10" placeholder="Generated PA Validate Request..." readonly></textarea>
+              <button onclick="copyToClipboard('paValidateRequest')" class="copy-btn">Copy</button>
+            </div>
+          </div>
+          <h2>PA Validate Response</h2>
+          <div class="form-group">
+            <textarea id="paValidateResponse" rows="5" placeholder="Paste PA Validate Response..." oninput="parsePAValidateResponse()"></textarea>
+          </div>
+          <div id="authentication-result" style="display: none; margin: 15px 0; padding: 10px; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 4px;">
+            Authentication Successful
+          </div>
+        </div>
+        <h1>STEP.7 FIDO/Challenge</h1>
+        <button onclick="runFidoChallenge()" id="fidoChallengeBtn" class="primary-btn">
+          Execute FIDO Challenge
+        </button>
+        <div class="step-section">
+          <div class="result-section">
+            <h2>FIDO/Challenge Request</h2>
+            <div class="code-block">
+              <h3>JSON</h3>
+              <pre id="fidoChallengeJson"></pre>
+            </div>
+            <div class="code-block">
+              <h3>JWT</h3>
+              <pre id="fidoChallengeJwt"></pre>
+            </div>
+          </div>
+          <iframe 
+            name="fido_challenge" 
+            id="fidoChallengeIframe"
+            title="FIDO Challenge iframe"
+            sandbox="allow-forms allow-scripts allow-same-origin allow-pointer-lock allow-popups"
+            allow="payment *; publickey-credentials-get *; publickey-credentials-create *" 
+            height="393" 
+            width="327" 
+            style="border:0px; position: relative; margin-top: 20px;">
+          </iframe>
+            
+          <form id="fidoChallengeForm" name="fido_challenge_form" method="POST" target="fido_challenge">
+            <input type="hidden" name="JWT" id="fidoChallengeJwtInput" />
+          </form>
+          <div class="result-section">
+            <h2>FIDO/Challenge Response</h2>
+            <div class="form-group">
+              <label for="fidoChallengeJwtPayloadInput">JWT</label>
+              <textarea id="fidoChallengeJwtPayloadInput" rows="3" placeholder="Paste FIDO/Challenge Response JWT..." oninput="parseFidoChallengeJwtPayload()"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="fidoChallengeJsonOutput">JSON</label>
+              <textarea id="fidoChallengeJsonOutput" rows="15" placeholder="Decoded JSON..." readonly></textarea>
+              <div id="fidoChallengeVerifyResult" class="verify-result"></div>
+            </div>
+            <div id="enrollment-result" style="display: none; margin: 15px 0; padding: 10px; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 4px;">
+              Enrollment Successful
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="vpp-authentication-section" class="step-section" style="display: none;">
+        <h1>STEP.4 VPP Authentication Flow - FIDO/Challenge</h1>
+        <button onclick="runFidoChallengeAuthFlow()" id="fidoChallengeBtn" class="primary-btn">
+          Execute FIDO Challenge
+        </button>
+        <div class="result-section">
+          <h2>FIDO/Challenge Request</h2>
+          <div class="code-block">
+            <h3>JSON</h3>
+            <pre id="fidoChallengeAuthFlowJson"></pre>
+          </div>
+          <div class="code-block">
+            <h3>JWT</h3>
+            <pre id="fidoChallengeAuthFlowJwt"></pre>
+          </div>
+        </div>
+        <form id="fidoChallengeForm" name="fido_challenge_form" method="POST" target="fido_challenge">
+          <input type="hidden" name="JWT" id="fidoChallengeJwtInput" />
+        </form>
+        <div class="result-section">
+          <h2>FIDO/Challenge Response</h2>
+          <div class="form-group">
+            <label for="fidoChallengeAuthFlowJwtPayloadInput">JWT</label>
+            <textarea id="fidoChallengeAuthFlowJwtPayloadInput" rows="3" placeholder="Paste FIDO/Challenge Response JWT..." oninput="parseFidoChallengeAuthFlowJwtPayload()"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="fidoChallengeAuthFlowJsonOutput">JSON</label>
+            <textarea id="fidoChallengeAuthFlowJsonOutput" rows="15" placeholder="Decoded JSON..." readonly></textarea>
+            <div id="fidoChallengeAuthFlowVerifyResult" class="verify-result"></div>
+          </div>
+          <div id="enrollment-result" style="display: none; margin: 15px 0; padding: 10px; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 4px;">
+            Enrollment Successful
+          </div>
+        </div>
+        <h1>STEP.5 PA Enroll</h1>  
+        <button onclick="generatePAEnrollAuthFlowRequest()" id="authBtn" class="primary-btn">
+          Generate PA Enroll Request
+        </button>
+        <div  class="step-section">
+          <h2>PA Enroll Request</h2>
+          <div class="form-group">
+            <div class="textarea-with-copy">
+              <textarea id="paEnrollAuthFlowRequest" rows="15" placeholder="Generated PA Enroll Auth Flow Request..." readonly></textarea>
+              <button onclick="copyToClipboard('paEnrollAuthFlowRequest')" class="copy-btn">Copy</button>
+            </div>
+          </div>
+          <h2>PA Enroll Response</h2>
+          <div class="form-group">
+            <textarea id="paEnrollResponse" rows="15" placeholder="Paste PA Enroll Response..." oninput="parsePaEnrollResponse()"></textarea>
+          </div>            
+        </div>      
+      </div>
+    </div>
+  </div>
+    
+    <div id="config-page" class="page" style="display: none;">
+      <div class="header">
+        <h1>Configurations</h1>
+        <button onclick="navigateToHome()" class="back-btn">Back</button>
+      </div>
+      
+      <form id="config-form">
+        <div class="form-group">
+          <label for="SANDBOX_SITE">Sandbox Site</label>
+          <input type="text" id="SANDBOX_SITE" name="SANDBOX_SITE" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="PROD_SITE">Production Site</label>
+          <input type="text" id="PROD_SITE" name="PROD_SITE" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="FIDO_INIT">FIDO Init Path</label>
+          <input type="text" id="FIDO_INIT" name="FIDO_INIT" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="FIDO_CHALLENGE">FIDO Challenge Path</label>
+          <input type="text" id="FIDO_CHALLENGE" name="FIDO_CHALLENGE" required>
+        </div>
+        
+
+        
+        <div class="form-group">
+          <label for="JWT_API_KEY_ID">JWT API Key ID</label>
+          <input type="text" id="JWT_API_KEY_ID" name="JWT_API_KEY_ID" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="JWT_ORG_UNIT_ID">JWT Org Unit ID</label>
+          <input type="text" id="JWT_ORG_UNIT_ID" name="JWT_ORG_UNIT_ID" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="JWT_SECRET">JWT Secret</label>
+          <input type="text" id="JWT_SECRET" name="JWT_SECRET" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="MERCHANT_ORIGIN">Merchant Origin</label>
+          <input type="text" id="MERCHANT_ORIGIN" name="MERCHANT_ORIGIN" required>
+          <small class="error">eg: https://www.cybersource.com</small>
+        </div>
+        
+        <div class="form-group">
+          <label for="RETURN_URL">Return URL</label>
+          <input type="text" id="RETURN_URL" name="RETURN_URL" required>
+          <small class="error">eg: https://www.cybersource.com/return</small>
+        </div>
+        
+        <button type="submit" id="save-btn">Save</button>
+      </form>
+      
+      <div id="config-message" class="message"></div>
+    </div>
+  </div>
+  
+  <script>
+    let config = {};
+    let currentEnvironment = 'sandbox';
+    let sequenceNumber = 1;
+    let currentTimestamp = '';
+    let currentReferenceId = '';
+    let currentPaSetupCode = '';
+    let ddcTimeout;
+    let ddcCompleted = false;
+    let fidoInitUuid = '';
+    let cleanedCardNumber = '';
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      await checkConfig();
+      await loadConfig();
+      setupEventListeners();
+    });
+
+    function setupEventListeners() {
+      document.getElementById('config-form').addEventListener('submit', saveConfig);
+      window.addEventListener('message', handleMessage);
+      
+      // 卡号输入事件监听
+      const cardNumberInput = document.getElementById('cardNumber');
+      if (cardNumberInput) {
+        const validateCard = function() {
+          const cardNumber = this.value;
+          if (cardNumber) {
+            const result = validateCardNumber(cardNumber);
+            if (result) {
+              cleanedCardNumber = result;
+              showMessage('Card number validation successful', 'success');
+            } else {
+              cleanedCardNumber = '';
+            }
+          } else {
+            cleanedCardNumber = '';
+          }
+        };
+        
+        cardNumberInput.addEventListener('input', validateCard.bind(cardNumberInput));
+        
+        // 手动触发一次验证，处理默认值
+        validateCard.call(cardNumberInput);
+      }
+    }
+
+    function navigateToConfig() {
+      document.getElementById('home-page').style.display = 'none';
+      document.getElementById('config-page').style.display = 'block';
+    }
+
+    function navigateToHome() {
+      document.getElementById('config-page').style.display = 'none';
+      document.getElementById('home-page').style.display = 'block';
+    }
+
+    async function checkConfig() {
+      try {
+        const response = await fetch('/api/health');
+        const data = await response.json();
+        // 不再自动跳转到配置页，默认显示首页
+        // if (!data.success || !data.configComplete) {
+        //   navigateToConfig();
+        // }
+      } catch (error) {
+        showMessage('Failed to check configuration', 'error');
+      }
+    }
+
+    async function loadConfig() {
+      try {
+        const response = await fetch('/api/config');
+        const data = await response.json();
+        if (data.success) {
+          config = data.data;
+          populateConfigForm();
+        }
+      } catch (error) {
+        showMessage('Failed to load configuration', 'error');
+      }
+    }
+
+    function populateConfigForm() {
+      const fields = ['SANDBOX_SITE', 'PROD_SITE', 'FIDO_INIT', 'FIDO_CHALLENGE',
+                      'JWT_API_KEY_ID', 'JWT_ORG_UNIT_ID', 'JWT_SECRET', 
+                      'MERCHANT_ORIGIN', 'RETURN_URL'];
+      
+      fields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input && config[field]) {
+          input.value = config[field];
+        }
+      });
+    }
+
+    async function saveConfig(e) {
+      e.preventDefault();
+      
+      const saveBtn = document.getElementById('save-btn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+      
+      try {
+        const formData = new FormData(e.target);
+        const configData = {};
+        
+        for (let [key, value] of formData.entries()) {
+          configData[key] = value;
+        }
+        
+        const response = await fetch('/api/config', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(configData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showConfigMessage('Configuration saved successfully', 'success');
+          config = configData;
+          setTimeout(() => {
+            navigateToHome();
+          }, 1000);
+        } else {
+          showConfigMessage(data.error, 'error');
+        }
+      } catch (error) {
+        showConfigMessage('Failed to save configuration', 'error');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+      }
+    }
+
+    async function runFidoInit() {
+      const runBtn = document.getElementById('fidoInitBtn');
+      runBtn.disabled = true;
+      runBtn.textContent = 'Executing...';
+      
+      clearMessage();
+      // 移除hideResults()调用，保持请求信息可见
+      
+      try {
+        const response = await fetch('/api/jwt/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error);
+        }
+        
+        const { jws, payload } = data.data;
+        // 保存UUID到全局变量
+        if (payload.jti) {
+          fidoInitUuid = payload.jti;
+        }
+        document.getElementById('request-jwt').textContent = jws;
+        document.getElementById('request-payload').textContent = formatJson(payload);
+        
+        const siteUrl = currentEnvironment === 'sandbox' ? config.SANDBOX_SITE : config.PROD_SITE;
+        const fidoInitUrl = `${siteUrl}${config.FIDO_INIT}`;
+        
+        const form = document.getElementById('fidoInitializeForm');
+        document.getElementById('jwtInput').value = jws;
+        form.action = fidoInitUrl;
+        form.submit();
+        
+      } catch (error) {
+        showMessage(`Execution failed: ${error.message}`, 'error');
+      } finally {
+        runBtn.disabled = false;
+        runBtn.textContent = 'FIDO Init';
+      }
+    }
+
+    function parsePASetupResponse() {
+      const input = document.getElementById('paSetupResponse').value.trim();
+      const flowIndicator = document.getElementById('flow-indicator');
+      
+      if (!input) {
+        flowIndicator.style.display = 'none';
+        return;
+      }
+      
+      try {
+        const jsonData = JSON.parse(input);
+        
+        // 检查是否是PA Setup response且包含VPP Enrollment Flow
+        // 检查fidoFlowType
+        if (jsonData.consumerAuthenticationInformation.fido && 
+            jsonData.consumerAuthenticationInformation.fido.fidoFlowType) {
+          if (jsonData.consumerAuthenticationInformation.fido.fidoFlowType === 'ENROLLMENT') {
+            // 显示VPP Enrollment Flow部分
+            document.getElementById('vpp-enrollment-section').style.display = 'block';
+            document.getElementById('vpp-authentication-section').style.display = 'none';
+            flowIndicator.textContent = 'Next --- Enrollment Flow';
+            flowIndicator.style.display = 'block';
+          } else if (jsonData.consumerAuthenticationInformation.fido.fidoFlowType === 'AUTHENTICATION') {
+            // 隐藏VPP Enrollment Flow部分
+            document.getElementById('vpp-authentication-section').style.display = 'block';
+            document.getElementById('vpp-enrollment-section').style.display = 'none';
+            flowIndicator.textContent = 'Next --- Authentication Flow';
+            flowIndicator.style.display = 'block';
+          } else {
+            // 隐藏VPP Enrollment Flow部分
+            document.getElementById('vpp-enrollment-section').style.display = 'none';
+            document.getElementById('vpp-authentication-section').style.display = 'none';
+            flowIndicator.style.display = 'none';
+          }
+        } else {
+          // 未找到fidoFlowType
+          flowIndicator.textContent = 'fidoFlowType not found';
+          flowIndicator.style.display = 'block';
+        }
+        
+      } catch (e) {
+        if (e instanceof SyntaxError) {
+          showMessage('Invalid JSON format, please enter valid JSON', 'error');
+        } else {
+          showMessage(`Error: ${e.message}`, 'error');
+        }
+      }
+    }
+
+    async function runDDC() {
+      const ddcBtn = document.getElementById('ddcBtn');
+      ddcBtn.disabled = true;
+      ddcBtn.textContent = 'Executing...';
+      
+      clearDdcMessage();
+      
+      let ddcTimeout;
+      let ddcCompleted = false;
+      
+      try {
+        const input = document.getElementById('paSetupResponse').value.trim();
+        
+        if (!input) {
+          throw new Error('Please paste JSON format PA Setup response');
+        }
+        
+        let jwt = input;
+        let jsonData;
+        
+        try {
+          jsonData = JSON.parse(input);
+          
+          if (jsonData.consumerAuthenticationInformation && jsonData.consumerAuthenticationInformation.accessToken) {
+            jwt = jsonData.consumerAuthenticationInformation.accessToken;
+          } else {
+            throw new Error('consumerAuthenticationInformation.accessToken field not found in JSON');
+          }
+        } catch (e) {
+          if (e instanceof SyntaxError) {
+            throw new Error('Invalid JSON format, please enter valid JSON');
+          }
+          throw e;
+        }
+        
+        const ddcUrl = jsonData.consumerAuthenticationInformation.deviceDataCollectionUrl;
+        
+        // 通过iframe加载DDC表单
+        const ddcIframe = document.getElementById('ddcIframe');
+        const ddcFormUrl = `/ddc-form.html?jwt=${encodeURIComponent(jwt)}&action=${encodeURIComponent(ddcUrl)}`;
+        ddcIframe.src = ddcFormUrl;
+        
+        ddcTimeout = setTimeout(() => {
+          if (!ddcCompleted) {
+            showDdcMessage('Proceed to next step...', 'error');
+            ddcBtn.disabled = false;
+            ddcBtn.textContent = 'Execute DDC';
+          }
+        }, 10000);
+        
+      } catch (error) {
+        showDdcMessage(`Execution failed: ${error.message}`, 'error');
+        ddcBtn.disabled = false;
+        ddcBtn.textContent = 'Execute DDC';
+      }
+    }
+
+    function handleMessage(event) {
+      // 检查消息来源是否是Cardinal Commerce域名（宽松匹配）
+      const origin = event.origin;
+      const isCardinalOrigin = origin.includes('cardinalcommerce.com');
+      
+      if (!isCardinalOrigin) {
+        console.log('Ignoring message from unknown origin:', origin);
+        return false; // 明确返回false
+      }
+      
+      if (event.data.type === 'JWT_RESPONSE') {
+        const { data, jws } = event.data;
+        document.getElementById('response-jws').textContent = jws;
+        document.getElementById('response-payload').textContent = formatJson(data);
+        document.getElementById('response-jws-block').style.display = 'block';
+        document.getElementById('response-payload-block').style.display = 'block';
+        
+        if (data.Payload.ErrorNumber === 0) {
+          showMessage('Compatibility Check Successful', 'success');
+        } else {
+          showMessage(`Compatibility Check Failed: ${data.Payload.ErrorDescription}`, 'error');
+        }
+      }
+      
+      if (event.data.type === 'DDC_RESPONSE') {
+        const { payload } = event.data;
+        document.getElementById('paSetupResponse').value = formatJson(payload);
+        
+        // 检查event.data中是否含有SUCCESS字样
+        const dataString = JSON.stringify(event.data);
+        if (dataString.includes('SUCCESS')) {
+          showDdcMessage('Device information collection successful', 'success');
+        } else {
+          showDdcMessage('Device information collection failed', 'error');
+        }
+        
+        clearTimeout(window.ddcTimeout);
+        window.ddcCompleted = true;
+        
+        const ddcBtn = document.getElementById('ddcBtn');
+        ddcBtn.disabled = false;
+        ddcBtn.textContent = 'DDC';
+      }
+      
+      return false; // 明确返回false，避免异步响应问题
+    }
+
+    function formatJson(obj) {
+      return JSON.stringify(obj, null, 2);
+    }
+
+    function showMessage(text, type) {
+      const messageEl = document.getElementById('message');
+      messageEl.textContent = text;
+      messageEl.className = `message ${type}`;
+    }
+
+    function clearMessage() {
+      const messageEl = document.getElementById('message');
+      messageEl.textContent = '';
+      messageEl.className = 'message';
+    }
+
+    function clearDdcMessage() {
+      const messageEl = document.getElementById('ddc-message');
+      messageEl.textContent = '';
+      messageEl.className = 'message';
+    }
+
+    function showConfigMessage(text, type) {
+      const messageEl = document.getElementById('config-message');
+      messageEl.textContent = text;
+      messageEl.className = `message ${type}`;
+    }
+
+    function showDdcMessage(text, type) {
+      const messageEl = document.getElementById('ddc-message');
+      messageEl.textContent = text;
+      messageEl.className = `message ${type}`;
+    }
+
+    function parseFidoInitJwtPayload() {
+      const input = document.getElementById('jwtPayloadInput').value.trim();
+      const jsonOutput = document.getElementById('jsonOutput');
+      const referenceIdOutput = document.getElementById('referenceIdOutput');
+      const verifyResult = document.getElementById('verifyResult');
+      
+      if (!input) {
+        jsonOutput.value = '';
+        referenceIdOutput.value = '';
+        verifyResult.textContent = '';
+        verifyResult.className = 'verify-result';
+        return;
+      }
+      
+      try {
+        let parsed;
+        let isJwt = false;
+        let jwt = input;
+        
+        // 检查是否为完整的JWT格式 (header.payload.signature)
+        if (input.includes('.')) {
+          const parts = input.split('.');
+          if (parts.length === 3) {
+            isJwt = true;
+            // 提取payload部分并解码
+            const payloadBase64 = parts[1];
+            // 处理Base64Url编码（替换特殊字符）
+            const payloadBase64Padded = payloadBase64.padEnd(payloadBase64.length + (4 - payloadBase64.length % 4) % 4, '=');
+            const payloadJson = atob(payloadBase64Padded.replace(/-/g, '+').replace(/_/g, '/'));
+            parsed = JSON.parse(payloadJson);
+          } else {
+            throw new Error('JWT format error: should contain header, payload and signature parts');
+          }
+        } else {
+          // 尝试直接解析为JSON
+          parsed = JSON.parse(input);
+        }
+        
+        jsonOutput.value = JSON.stringify(parsed, null, 2);
+        
+        if (parsed.Payload && parsed.Payload.ReferenceId) {
+          referenceIdOutput.value = parsed.Payload.ReferenceId;
+          currentReferenceId = parsed.Payload.ReferenceId;
+        } else if (parsed.ReferenceId) {
+          // 直接在顶层的ReferenceId（PA Setup response）
+          referenceIdOutput.value = parsed.ReferenceId;
+          currentReferenceId = parsed.ReferenceId;
+        } else {
+          referenceIdOutput.value = 'ReferenceId not found';
+        }
+        
+        // 验签功能
+        if (isJwt && config && config.JWT_SECRET) {
+          verifyJWT(jwt, config.JWT_SECRET, verifyResult);
+        } else if (isJwt) {
+          verifyResult.textContent = 'JWT secret configuration missing';
+          verifyResult.className = 'verify-result error';
+        } else {
+          verifyResult.textContent = '';
+          verifyResult.className = 'verify-result';
+        }
+        
+      } catch (error) {
+        jsonOutput.value = 'Parse error: ' + error.message;
+        referenceIdOutput.value = '';
+        verifyResult.textContent = '';
+        verifyResult.className = 'verify-result';
+      }
+    }
+
+    function parseFidoChallengeJwtPayload() {
+      const input = document.getElementById('fidoChallengeJwtPayloadInput').value.trim();
+      const jsonOutput = document.getElementById('fidoChallengeJsonOutput');
+      const verifyResult = document.getElementById('fidoChallengeVerifyResult');
+      
+      if (!input) {
+        jsonOutput.value = '';
+        verifyResult.textContent = '';
+        verifyResult.className = 'verify-result';
+        return;
+      }
+      
+      try {
+        let parsed;
+        let isJwt = false;
+        let jwt = input;
+        
+        // 检查是否为完整的JWT格式 (header.payload.signature)
+        if (input.includes('.')) {
+          const parts = input.split('.');
+          if (parts.length === 3) {
+            isJwt = true;
+            // 提取payload部分并解码
+            const payloadBase64 = parts[1];
+            // 处理Base64Url编码（替换特殊字符）
+            const payloadBase64Padded = payloadBase64.padEnd(payloadBase64.length + (4 - payloadBase64.length % 4) % 4, '=');
+            const payloadJson = atob(payloadBase64Padded.replace(/-/g, '+').replace(/_/g, '/'));
+            parsed = JSON.parse(payloadJson);
+          } else {
+            throw new Error('JWT format error: should contain header, payload and signature parts');
+          }
+        } else {
+          // 尝试直接解析为JSON
+          parsed = JSON.parse(input);
+        }
+        
+        jsonOutput.value = JSON.stringify(parsed, null, 2);
+        
+        if (parsed.Payload && parsed.Payload.ReferenceId) {
+          currentReferenceId = parsed.Payload.ReferenceId;
+        } else if (parsed.ReferenceId) {
+          // 直接在顶层的ReferenceId（PA Setup response）
+          currentReferenceId = parsed.ReferenceId;
+        }
+                
+        // 验签功能
+        if (isJwt && config && config.JWT_SECRET) {
+          verifyJWT(jwt, config.JWT_SECRET, verifyResult);
+        } else if (isJwt) {
+          verifyResult.textContent = 'JWT secret configuration missing';
+          verifyResult.className = 'verify-result error';
+        } else {
+          verifyResult.textContent = '';
+          verifyResult.className = 'verify-result';
+        }
+        
+      } catch (error) {
+        jsonOutput.value = 'Parse error: ' + error.message;
+        referenceIdOutput.value = '';
+        verifyResult.textContent = '';
+        verifyResult.className = 'verify-result';
+      }
+    }
+
+    function parseFidoChallengeAuthFlowJwtPayload() {
+      const input = document.getElementById('fidoChallengeAuthFlowJwtPayloadInput').value.trim();
+      const jsonOutput = document.getElementById('fidoChallengeAuthFlowJsonOutput');
+      const verifyResult = document.getElementById('fidoChallengeAuthFlowVerifyResult');
+      
+      if (!input) {
+        jsonOutput.value = '';
+        verifyResult.textContent = '';
+        verifyResult.className = 'verify-result';
+        return;
+      }
+      
+      try {
+        let parsed;
+        let isJwt = false;
+        let jwt = input;
+        
+        // 检查是否为完整的JWT格式 (header.payload.signature)
+        if (input.includes('.')) {
+          const parts = input.split('.');
+          if (parts.length === 3) {
+            isJwt = true;
+            // 提取payload部分并解码
+            const payloadBase64 = parts[1];
+            // 处理Base64Url编码（替换特殊字符）
+            const payloadBase64Padded = payloadBase64.padEnd(payloadBase64.length + (4 - payloadBase64.length % 4) % 4, '=');
+            const payloadJson = atob(payloadBase64Padded.replace(/-/g, '+').replace(/_/g, '/'));
+            parsed = JSON.parse(payloadJson);
+          } else {
+            throw new Error('JWT format error: should contain header, payload and signature parts');
+          }
+        } else {
+          // 尝试直接解析为JSON
+          parsed = JSON.parse(input);
+        }
+        
+        jsonOutput.value = JSON.stringify(parsed, null, 2);
+        
+        if (parsed.Payload && parsed.Payload.ReferenceId) {
+          currentReferenceId = parsed.Payload.ReferenceId;
+        } else if (parsed.ReferenceId) {
+          // 直接在顶层的ReferenceId（PA Setup response）
+          currentReferenceId = parsed.ReferenceId;
+        }
+                
+        // 验签功能
+        if (isJwt && config && config.JWT_SECRET) {
+          verifyJWT(jwt, config.JWT_SECRET, verifyResult);
+        } else if (isJwt) {
+          verifyResult.textContent = 'JWT secret configuration missing';
+          verifyResult.className = 'verify-result error';
+        } else {
+          verifyResult.textContent = '';
+          verifyResult.className = 'verify-result';
+        }
+        
+      } catch (error) {
+        jsonOutput.value = 'Parse error: ' + error.message;
+        referenceIdOutput.value = '';
+        verifyResult.textContent = '';
+        verifyResult.className = 'verify-result';
+      }
+    }
+
+    function verifyJWT(token, secret, resultElement) {
+      try {
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+          throw new Error('JWT Format Error');
+        }
+        
+        const header = JSON.parse(atob(parts[0].replace(/-/g, '+').replace(/_/g, '/')));
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        const signature = parts[2];
+        
+        // 计算签名
+        const data = parts[0] + '.' + parts[1];
+        
+        // 使用CryptoJS计算HMAC-SHA256签名
+        const hmac = CryptoJS.HmacSHA256(data, secret);
+        
+        // 转换为Base64，然后手动转换为Base64Url格式
+        const hmacBase64 = hmac.toString(CryptoJS.enc.Base64);
+        const expectedSignature = hmacBase64
+          .replace(/=/g, '')  // 移除填充
+          .replace(/\+/g, '-')  // + 替换为 -
+          .replace(/\//g, '_');  // / 替换为 _
+        
+        if (signature === expectedSignature) {
+          resultElement.textContent = 'Signature Verified';
+          resultElement.className = 'verify-result success';
+        } else {
+          resultElement.textContent = 'Signature Verification Failed';
+          resultElement.className = 'verify-result error';
+        }
+      } catch (error) {
+        resultElement.textContent = 'Signature Verification Failed: ' + error.message;
+        resultElement.className = 'verify-result error';
+      }
+    }
+
+    function generatePASetupRequest() {
+      try {
+        const referenceId = document.getElementById('referenceIdOutput').value;
+        const expirationMonth = document.getElementById('expirationMonth').value;
+        const expirationYear = document.getElementById('expirationYear').value;
+        
+        if (!referenceId || referenceId === 'ReferenceId not found') {
+          alert('Please parse FIDO/Init Response JWT to get ReferenceId first');
+          return;
+        }
+        
+        if (!cleanedCardNumber || !expirationMonth || !expirationYear) {
+          showMessage('Please enter complete card information and ensure card number validation is successful', 'error');
+          return;
+        }
+        
+        // 生成当前时间（年月日时分秒）
+        const now = new Date();
+        currentTimestamp = now.getFullYear().toString() + 
+                        padZero(now.getMonth() + 1) + 
+                        padZero(now.getDate()) + 
+                        padZero(now.getHours()) + 
+                        padZero(now.getMinutes()) + 
+                        padZero(now.getSeconds());
+        
+        // 保存当前ReferenceId
+        currentReferenceId = referenceId;
+        
+        // 生成三位递增数列
+        const sequence = padZero(sequenceNumber, 3);
+        sequenceNumber++;
+        if (sequenceNumber > 999) {
+          sequenceNumber = 1;
+        }
+        
+        // 保存完整的code（时间戳+序列号）
+        currentPaSetupCode = currentTimestamp + sequence;
+        
+        // 提取Merchant Origin的域名，去除https前缀
+        let merchantName = 'localhost';
+        if (config.MERCHANT_ORIGIN) {
+          merchantName = config.MERCHANT_ORIGIN.replace(/^https?:\/\//, '');
+        }
+        
+        // 构建PA Setup请求
+        const paSetupRequest = {
+          "clientReferenceInformation": {
+            "code": currentPaSetupCode
+          },
+          "merchantInformation": {
+            "merchantDescriptor": {
+              "name": merchantName
+            }
+          },
+          "paymentInformation": {
+            "card": {
+              "type": "001",
+              "expirationMonth": expirationMonth,
+              "expirationYear": expirationYear,
+              "number": cleanedCardNumber
+            }
+          },
+          "acquirerInformation": {
+            "country": "US"
+          },
+          "consumerAuthenticationInformation": {
+            "referenceId": referenceId,
+            "languagePreference": [
+              "en",
+              "es"
+            ]
+          },
+          "orderInformation": {
+            "amountDetails": {
+              "totalAmount": "12.34",
+              "currency": "USD"
+            },
+            "billTo": {
+              "email": "yashao@visa.com"
+            }
+          }
+        };
+        
+        // 显示生成的请求
+        document.getElementById('paSetupRequest').value = JSON.stringify(paSetupRequest, null, 2);
+        
+      } catch (error) {
+        alert('Failed to generate PA Setup request: ' + error.message);
+      }
+    }
+
+    function padZero(num, length = 2) {
+      return num.toString().padStart(length, '0');
+    }
+    
+    function copyToClipboard(elementId) {
+      const element = document.getElementById(elementId);
+      if (element) {
+        element.select();
+        document.execCommand('copy');
+        
+        // 显示复制成功提示
+        const button = element.parentElement.querySelector('.copy-btn');
+        if (button) {
+          const originalText = button.textContent;
+          button.textContent = 'Copied';
+          button.style.backgroundColor = '#4CAF50';
+          
+          setTimeout(() => {
+            button.textContent = originalText;
+            button.style.backgroundColor = '';
+          }, 1000);
+        }
+      }
+    }
+
+    async function generatePAEnrollRequest() {
+      try {
+        if (!currentTimestamp) {
+          alert('Please generate PA Setup request first');
+          return;
+        }
+        
+        if (!currentReferenceId) {
+          alert('Please parse FIDO/Init Response JWT to get ReferenceId first');
+          return;
+        }
+        
+        const expirationMonth = document.getElementById('expirationMonth').value;
+        const expirationYear = document.getElementById('expirationYear').value;
+        
+        if (!cleanedCardNumber || !expirationMonth || !expirationYear) {
+          showMessage('Please enter complete card information and ensure card number validation is successful', 'error');
+          return;
+        }
+        
+        // 采集设备信息
+        const deviceInfo = await collectDeviceInformation();
+        
+        // 构建PA Enroll请求
+        const paEnrollRequest = {
+          "clientReferenceInformation": {
+            "code": currentPaSetupCode
+          },
+          "orderInformation": {
+            "amountDetails": {
+              "currency": "USD",
+              "totalAmount": "12.34"
+            },
+            "billTo": {
+              "email": "yashao@visa.com"
+            }
+          },
+          "paymentInformation": {
+            "card": {
+              "type": "001",
+              "expirationMonth": expirationMonth,
+              "expirationYear": expirationYear,
+              "number": cleanedCardNumber
+            }
+          },
+          "deviceInformation": deviceInfo,
+          "consumerAuthenticationInformation": {
+            "challengeCode": "04",
+            "alternateAuthenticationMethod": "80",
+            "deviceChannel": "BROWSER",
+            "returnUrl": config.RETURN_URL || "https://www.cybersource.com/return",
+            "referenceId": currentReferenceId,
+            "transactionMode": "eCommerce"
+          }
+        };
+        
+        // 显示生成的请求
+        document.getElementById('paEnrollRequest').value = JSON.stringify(paEnrollRequest, null, 2);
+        
+      } catch (error) {
+        alert('Failed to generate PA Enroll request: ' + error.message);
+      }
+    }
+
+    async function generatePAEnrollAuthFlowRequest() {
+      try {
+        if (!currentTimestamp) {
+          alert('Please generate PA Setup request first');
+          return;
+        }
+        
+        if (!currentReferenceId) {
+          alert('Please parse FIDO/Init Response JWT to get ReferenceId first');
+          return;
+        }
+        
+        const expirationMonth = document.getElementById('expirationMonth').value;
+        const expirationYear = document.getElementById('expirationYear').value;
+        
+        if (!cleanedCardNumber || !expirationMonth || !expirationYear) {
+          showMessage('Please enter complete card information and ensure card number validation is successful', 'error');
+          return;
+        }
+        
+        // 采集设备信息
+        const deviceInfo = await collectDeviceInformation();
+        
+        // 构建PA Enroll请求
+        const paEnrollRequest = {
+          "clientReferenceInformation": {
+            "code": currentPaSetupCode
+          },
+          "orderInformation": {
+            "amountDetails": {
+              "currency": "USD",
+              "totalAmount": "12.34"
+            },
+            "billTo": {
+              "email": "yashao@visa.com"
+            }
+          },
+          "paymentInformation": {
+            "card": {
+              "type": "001",
+              "expirationMonth": expirationMonth,
+              "expirationYear": expirationYear,
+              "number": cleanedCardNumber
+            }
+          },
+          "deviceInformation": deviceInfo,
+          "consumerAuthenticationInformation": {
+            "deviceChannel": "BROWSER",
+            "returnUrl": config.RETURN_URL || "https://www.cybersource.com/return",
+            "referenceId": currentReferenceId,
+            "transactionMode": "eCommerce"
+          }
+        };
+        
+        // 显示生成的请求
+        document.getElementById('paEnrollAuthFlowRequest').value = JSON.stringify(paEnrollRequest, null, 2);
+        
+      } catch (error) {
+        alert('Failed to generate PA Enroll Auth Flow request: ' + error.message);
+      }
+    }
+
+    async function collectDeviceInformation() {
+      const acceptTypes = [];
+      for (const mimeType of navigator.mimeTypes) {
+        acceptTypes.push(mimeType.type);
+      }
+      const ipAddress = await getIPAddress();
+      return {
+        "ipAddress": ipAddress,
+        "httpAcceptContent": acceptTypes.join(',') || "test",
+        "httpBrowserLanguage": navigator.language || "en_us",
+        "httpBrowserJavaEnabled": navigator.javaEnabled() ? "Y" : "N",
+        "httpBrowserJavaScriptEnabled": "Y",
+        "httpBrowserColorDepth": screen.colorDepth.toString(),
+        "httpBrowserScreenHeight": screen.height.toString(),
+        "httpBrowserScreenWidth": screen.width.toString(),
+        "httpBrowserTimeDifference": new Date().getTimezoneOffset().toString(),
+        "userAgentBrowserValue": btoa(navigator.userAgent).substring(0, 20)
+      };
+    }
+
+    function parsePaEnrollResponse() {
+      const input = document.getElementById('paEnrollResponse').value.trim();
+      
+      if (!input) {
+        return;
+      }
+      
+      try {
+        const parsed = JSON.parse(input);
+        
+        // 检查是否包含必要的字段
+        if (parsed.consumerAuthenticationInformation && 
+            parsed.consumerAuthenticationInformation.accessToken && 
+            parsed.consumerAuthenticationInformation.stepUpUrl) {
+          // 解析accessToken JWT获取challengeWindowSize
+          const accessToken = parsed.consumerAuthenticationInformation.accessToken;
+          if (accessToken.includes('.')) {
+            const parts = accessToken.split('.');
+            if (parts.length === 3) {
+              const payloadBase64 = parts[1];
+              const payloadBase64Padded = payloadBase64.padEnd(payloadBase64.length + (4 - payloadBase64.length % 4) % 4, '=');
+              const payloadJson = atob(payloadBase64Padded.replace(/-/g, '+').replace(/_/g, '/'));
+              const payload = JSON.parse(payloadJson);
+              
+              // 存储解析结果以便后续使用
+              window.paEnrollResponse = parsed;
+              window.paEnrollPayload = payload;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('解析PA Enroll response失败:', error);
+      }
+    }
+
+    function runStepUp() {
+      try {
+        const input = document.getElementById('paEnrollResponse').value.trim();
+        
+        if (!input) {
+          throw new Error('Please paste PA Enroll response');
+        }
+        
+        let parsed;
+        try {
+          parsed = JSON.parse(input);
+        } catch (e) {
+          throw new Error('Invalid JSON format, please enter valid JSON');
+        }
+        
+        if (!parsed.consumerAuthenticationInformation) {
+          throw new Error('consumerAuthenticationInformation field not found in PA Enroll response');
+        }
+        
+        const accessToken = parsed.consumerAuthenticationInformation.accessToken;
+        const stepUpUrl = parsed.consumerAuthenticationInformation.stepUpUrl;
+        
+        if (!accessToken) {
+          throw new Error('accessToken field not found in PA Enroll response');
+        }
+        
+        if (!stepUpUrl) {
+          throw new Error('stepUpUrl field not found in PA Enroll response');
+        }
+        
+        // 解析accessToken JWT获取challengeWindowSize
+        let challengeWindowSize = '03'; // 默认值
+        if (accessToken.includes('.')) {
+          const parts = accessToken.split('.');
+          if (parts.length === 3) {
+            const payloadBase64 = parts[1];
+            const payloadBase64Padded = payloadBase64.padEnd(payloadBase64.length + (4 - payloadBase64.length % 4) % 4, '=');
+            const payloadJson = atob(payloadBase64Padded.replace(/-/g, '+').replace(/_/g, '/'));
+            const payload = JSON.parse(payloadJson);
+            
+            if (payload.challengeWindowSize) {
+              challengeWindowSize = payload.challengeWindowSize;
+            }
+          }
+        }
+        
+        // 根据challengeWindowSize设置iframe尺寸
+        const iframe = document.getElementById('stepUpIframe');
+        let width, height;
+        
+        switch (challengeWindowSize) {
+          case '01':
+            width = '250';
+            height = '400';
+            break;
+          case '02':
+            width = '390';
+            height = '400';
+            break;
+          case '03':
+            width = '500';
+            height = '600';
+            break;
+          case '04':
+            width = '600';
+            height = '400';
+            break;
+          case '05':
+            // 全屏
+            width = '100%';
+            height = '800';
+            break;
+          default:
+            width = '500';
+            height = '600';
+        }
+        
+        iframe.width = width;
+        iframe.height = height;
+        iframe.style.display = 'block';
+        
+        // 设置表单
+        const form = document.getElementById('step-up-form');
+        form.action = stepUpUrl;
+        document.getElementById('stepUpJwt').value = accessToken;
+        document.getElementById('stepUpMd').value = currentPaSetupCode;
+        
+        // 提交表单
+        form.submit();
+        
+      } catch (error) {
+        alert('Failed to execute StepUp: ' + error.message);
+      }
+    }
+
+    function generatePAValidateRequest() {
+      try {
+        if (!currentPaSetupCode) {
+          alert('Please generate PA Setup request first');
+          return;
+        }
+        
+        const paEnrollResponseInput = document.getElementById('paEnrollResponse').value.trim();
+        if (!paEnrollResponseInput) {
+          alert('Please paste PA Enroll response');
+          return;
+        }
+        
+        const expirationMonth = document.getElementById('expirationMonth').value;
+        const expirationYear = document.getElementById('expirationYear').value;
+        
+        if (!cleanedCardNumber || !expirationMonth || !expirationYear) {
+          showMessage('Please enter complete card information and ensure card number validation is successful', 'error');
+          return;
+        }
+        
+        let parsed;
+        try {
+          parsed = JSON.parse(paEnrollResponseInput);
+        } catch (e) {
+          throw new Error('PA Enroll response JSON format error');
+        }
+        
+        if (!parsed.consumerAuthenticationInformation) {
+          throw new Error('consumerAuthenticationInformation field not found in PA Enroll response');
+        }
+        
+        if (!parsed.consumerAuthenticationInformation.authenticationTransactionId) {
+          throw new Error('PA Enroll response中未找到authenticationTransactionId字段');
+        }
+        
+        const authenticationTransactionId = parsed.consumerAuthenticationInformation.authenticationTransactionId;
+        
+        // 构建PA Validate请求
+        const paValidateRequest = {
+          "clientReferenceInformation": {
+            "code": currentPaSetupCode
+          },
+          "paymentInformation": {
+            "card": {
+              "expirationMonth": expirationMonth,
+              "expirationYear": expirationYear,
+              "number": cleanedCardNumber
+            }
+          },
+          "consumerAuthenticationInformation": {
+            "authenticationTransactionId": authenticationTransactionId
+          }
+        };
+        
+        // 显示生成的请求
+        document.getElementById('paValidateRequest').value = JSON.stringify(paValidateRequest, null, 2);
+        
+      } catch (error) {
+        alert('生成PA Validate请求失败: ' + error.message);
+      }
+    }
+
+    function parsePAValidateResponse() {
+      const input = document.getElementById('paValidateResponse').value.trim();
+      
+      if (!input) {
+        // 隐藏结果和按钮
+        document.getElementById('authentication-result').style.display = 'none';
+        document.getElementById('fidoChallengeBtn').style.display = 'none';
+        return;
+      }
+      
+      try {
+        const parsed = JSON.parse(input);
+        
+        // 检查status和eciRaw
+        if (parsed.status === 'AUTHENTICATION_SUCCESSFUL' && 
+            parsed.consumerAuthenticationInformation && 
+            (parsed.consumerAuthenticationInformation.eciRaw === '05' || 
+             parsed.consumerAuthenticationInformation.eciRaw === '06')) {
+          // 显示成功消息和FIDO Challenge按钮
+          document.getElementById('authentication-result').style.display = 'block';
+          document.getElementById('fidoChallengeBtn').style.display = 'block';
+        } else {
+          // 隐藏结果和按钮
+          document.getElementById('authentication-result').style.display = 'none';
+          document.getElementById('fidoChallengeBtn').style.display = 'none';
+        }
+      } catch (error) {
+        console.error('解析PA Validate response失败:', error);
+        // 隐藏结果和按钮
+        document.getElementById('authentication-result').style.display = 'none';
+        document.getElementById('fidoChallengeBtn').style.display = 'none';
+      }
+    }
+
+    function runFidoChallenge() {
+      try {
+        if (!config.JWT_API_KEY_ID || !config.JWT_ORG_UNIT_ID || !config.RETURN_URL || !config.JWT_SECRET) {
+          throw new Error('缺少必要的配置信息');
+        }
+        
+        if (!fidoInitUuid) {
+          throw new Error('未找到FIDO/Init的UUID');
+        }
+        
+        if (!currentReferenceId) {
+          throw new Error('未找到ReferenceId');
+        }
+        
+        // 生成FIDO Challenge JSON
+        const now = Math.floor(Date.now() / 1000);
+        const fidoChallengeJson = {
+          "iss": config.JWT_API_KEY_ID,
+          "jti": fidoInitUuid,
+          "iat": now,
+          "OrgUnitId": config.JWT_ORG_UNIT_ID,
+          "ReturnUrl": config.RETURN_URL,
+          "ObjectifyPayload": true,
+          "ReferenceId": currentReferenceId
+        };
+        
+        // 显示JSON
+        document.getElementById('fidoChallengeJson').textContent = JSON.stringify(fidoChallengeJson, null, 2);
+     
+        // 生成JWT
+        const header = {
+          "alg": "HS256",
+          "typ": "JWT"
+        };
+        
+        const headerBase64 = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+        const payloadBase64 = btoa(JSON.stringify(fidoChallengeJson)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+        const data = headerBase64 + '.' + payloadBase64;
+        
+        // 使用CryptoJS计算HMAC-SHA256签名
+        const hmac = CryptoJS.HmacSHA256(data, config.JWT_SECRET);
+        const signatureBase64 = hmac.toString(CryptoJS.enc.Base64).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+        
+        const fidoChallengeJwt = headerBase64 + '.' + payloadBase64 + '.' + signatureBase64;
+        
+        // 显示JWT
+        document.getElementById('fidoChallengeJwt').textContent = fidoChallengeJwt;
+        
+        // 显示FIDO Challenge部分
+        // document.getElementById('fido-challenge-section').style.display = 'block';
+        
+        // 设置表单
+        const siteUrl = currentEnvironment === 'sandbox' ? config.SANDBOX_SITE : config.PROD_SITE;
+        const fidoChallengeUrl = `${siteUrl}${config.FIDO_CHALLENGE}`;
+        
+        const form = document.getElementById('fidoChallengeForm');
+        form.action = fidoChallengeUrl;
+        document.getElementById('fidoChallengeJwtInput').value = fidoChallengeJwt;
+        
+        // 提交表单
+        form.submit();
+        
+      } catch (error) {
+        alert('执行FIDO Challenge失败: ' + error.message);
+      }
+    }
+
+    function runFidoChallengeAuthFlow() {
+      try {
+        if (!config.JWT_API_KEY_ID || !config.JWT_ORG_UNIT_ID || !config.RETURN_URL || !config.JWT_SECRET) {
+          throw new Error('缺少必要的配置信息');
+        }
+        
+        if (!fidoInitUuid) {
+          throw new Error('未找到FIDO/Init的UUID');
+        }
+        
+        if (!currentReferenceId) {
+          throw new Error('未找到ReferenceId');
+        }
+        
+        // 生成FIDO Challenge JSON
+        const now = Math.floor(Date.now() / 1000);
+        const fidoChallengeJson = {
+          "iss": config.JWT_API_KEY_ID,
+          "jti": fidoInitUuid,
+          "iat": now,
+          "OrgUnitId": config.JWT_ORG_UNIT_ID,
+          "ReturnUrl": config.RETURN_URL,
+          "ObjectifyPayload": true,
+          "ReferenceId": currentReferenceId
+        };
+        
+        // 显示JSON
+        document.getElementById('fidoChallengeAuthFlowJson').textContent = JSON.stringify(fidoChallengeJson, null, 2);
+     
+        // 生成JWT
+        const header = {
+          "alg": "HS256",
+          "typ": "JWT"
+        };
+        
+        const headerBase64 = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+        const payloadBase64 = btoa(JSON.stringify(fidoChallengeJson)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+        const data = headerBase64 + '.' + payloadBase64;
+        
+        // 使用CryptoJS计算HMAC-SHA256签名
+        const hmac = CryptoJS.HmacSHA256(data, config.JWT_SECRET);
+        const signatureBase64 = hmac.toString(CryptoJS.enc.Base64).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+        
+        const fidoChallengeJwt = headerBase64 + '.' + payloadBase64 + '.' + signatureBase64;
+        
+        // 显示JWT
+        document.getElementById('fidoChallengeAuthFlowJwt').textContent = fidoChallengeJwt;
+        
+        // 显示VPP Authentication Flow部分
+        document.getElementById('vpp-authentication-section').style.display = 'block';
+        
+        // 设置表单
+        const siteUrl = currentEnvironment === 'sandbox' ? config.SANDBOX_SITE : config.PROD_SITE;
+        const fidoChallengeUrl = `${siteUrl}${config.FIDO_CHALLENGE}`;
+        
+        const form = document.getElementById('fidoChallengeForm');
+        form.action = fidoChallengeUrl;
+        document.getElementById('fidoChallengeJwtInput').value = fidoChallengeJwt;
+                
+        // 提交表单到新窗口
+        // 打开一个指定大小的弹窗
+        const popupName = 'fido_challenge_popup';
+        const popupWindow = window.open('', popupName, 'width=400,height=500,left=200,top=200');
+        if (popupWindow) {
+          // 将表单的target设置为弹窗的名称
+          form.target = popupName;
+          // 提交表单
+          form.submit();
+        } else {
+          // 如果弹窗被阻止，使用默认的_blank行为
+          form.target = '_blank';
+          form.submit();
+        }
+      } catch (error) {
+        alert('执行FIDO Challenge失败: ' + error.message);
+      }
+    }
+
+    function luhnCheck(cardNumber) {
+      let sum = 0;
+      let isEven = false;
+      
+      // 从右到左遍历
+      for (let i = cardNumber.length - 1; i >= 0; i--) {
+        let digit = parseInt(cardNumber[i]);
+        
+        if (isEven) {
+          digit *= 2;
+          if (digit > 9) {
+            digit -= 9;
+          }
+        }
+        
+        sum += digit;
+        isEven = !isEven;
+      }
+      
+      return sum % 10 === 0;
+    }
+
+    function validateCardNumber(cardNumber) {
+      // 移除所有非数字字符
+      const cleanedCardNumber = cardNumber.replace(/\D/g, '');
+      
+      // 检查长度
+      if (cleanedCardNumber.length !== 16) {
+        showMessage('Card number must be 16 digits', 'error');
+        return false;
+      }
+      
+      // 检查Luhn校验
+      if (!luhnCheck(cleanedCardNumber)) {
+        showMessage('Card number is invalid (Luhn check failed)', 'error');
+        return false;
+      }
+      
+      return cleanedCardNumber;
+    }
+
+    async function getIPAddress() {
+      // 方法1: 使用WebRTC API获取真实IP地址
+      try {
+        const ip = await new Promise((resolve, reject) => {
+          // 创建一个RTCPeerConnection
+          const pc = new RTCPeerConnection({
+            iceServers: []
+          });
+          
+          // 创建一个数据通道
+          pc.createDataChannel('');
+          
+          // 监听ICE候选事件
+          pc.onicecandidate = (event) => {
+            if (event.candidate) {
+              // 从候选信息中提取IP地址
+              const ipAddress = event.candidate.candidate.match(/([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})/);
+              if (ipAddress) {
+                resolve(ipAddress[1]);
+                pc.close();
+              }
+            }
+          };
+          
+          // 创建一个SDP offer
+          pc.createOffer().then((offer) => {
+            return pc.setLocalDescription(offer);
+          }).catch(reject);
+          
+          // 超时处理
+          setTimeout(() => {
+            pc.close();
+            reject(new Error('WebRTC超时'));
+          }, 3000);
+        });
+        return ip;
+      } catch (error) {
+        console.log('WebRTC获取IP失败，尝试使用API获取:', error);
+        
+        // 方法2: 使用第三方API获取IP地址
+        try {
+          const response = await fetch('https://api.ipify.org?format=json');
+          const data = await response.json();
+          return data.ip;
+        } catch (apiError) {
+          console.error('API获取IP失败:', apiError);
+          // 如果所有方法都失败，返回默认IP地址
+          return "139.130.4.5";
+        }
+      }
+    }
+
+    function hideResults() {
+      document.getElementById('request-section').style.display = 'none';
+      document.getElementById('response-section').style.display = 'none';
+    }
+
+    document.getElementById('environment').addEventListener('change', (e) => {
+      currentEnvironment = e.target.value;
+    });
+  </script>
+</body>
+</html>

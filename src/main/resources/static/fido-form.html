@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>FIDO Form</title>
+</head>
+<body>
+  <iframe id="fidoIframe" src="" frameborder="0"></iframe>
+  <form id="fidoForm" target="fidoIframe" method="POST">
+    <input type="hidden" name="JWT" id="jwtInput">
+  </form>
+
+  <script>
+    window.onload = function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const jwt = urlParams.get('jwt');
+      const action = urlParams.get('action');
+
+      if (jwt && action) {
+        const form = document.getElementById('fidoForm');
+        document.getElementById('jwtInput').value = jwt;
+        form.action = action;
+        form.submit();
+      }
+    };
+  </script>
+</body>
+</html>

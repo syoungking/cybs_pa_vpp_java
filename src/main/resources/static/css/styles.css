@@ -1,0 +1,479 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Visa Brand Colors */
+:root {
+  --visa-blue: #142688;
+  --visa-gold: #f7b600;
+  --visa-light-blue: #0078d4;
+  --visa-gray: #f5f5f5;
+  --visa-dark-gray: #333333;
+  --visa-light-gray: #e6e6e6;
+  --visa-green: #00b233;
+  --visa-red: #e60000;
+}
+
+body {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+  color: var(--visa-dark-gray);
+  background-color: var(--visa-gray);
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--visa-blue);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header h1 {
+  color: var(--visa-blue);
+  font-size: 24px;
+  font-weight: 700;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.config-btn,
+.back-btn {
+  padding: 10px 20px;
+  background-color: #ffffff;
+  color: var(--visa-blue);
+  border: 2px solid var(--visa-blue);
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+}
+
+.config-btn:hover,
+.back-btn:hover {
+  background-color: var(--visa-blue);
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.env-selector {
+  margin: 30px 0;
+  display: flex;
+  align-items: center;
+}
+
+.card-input-section {
+  margin: 30px 0;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.card-input-section h3 {
+  margin-bottom: 20px;
+  color: #142688;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.env-selector label {
+  margin-right: 15px;
+  font-weight: 600;
+  color: var(--visa-dark-gray);
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.env-selector select {
+  background-color: #ffffff;
+  color: var(--visa-dark-gray);
+  border: 2px solid var(--visa-light-gray);
+  padding: 10px 14px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 500;
+  transition: border-color 0.3s ease;
+}
+
+.env-selector select:focus {
+  outline: none;
+  border-color: var(--visa-blue);
+  box-shadow: 0 0 0 2px rgba(20, 38, 136, 0.1);
+}
+
+.primary-btn {
+  padding: 14px 28px;
+  background-color: var(--visa-blue);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+}
+
+.primary-btn:hover {
+  background-color: #0f1d6b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.primary-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.step-section {
+  margin: 40px 0;
+  padding: 30px;
+  background-color: #ffffff;
+  border: 1px solid var(--visa-light-gray);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.flow-indicator {
+  text-align: center;
+  padding: 20px;
+  margin: 20px 0;
+  background-color: #ffffff;
+  border: 2px solid var(--visa-blue);
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--visa-blue);
+}
+
+.vpp-section {
+  margin-top: 30px;
+  padding: 25px;
+  background-color: #f8f9fa;
+  border: 1px solid var(--visa-light-gray);
+  border-radius: 6px;
+  border-left: 4px solid var(--visa-blue);
+}
+
+.vpp-section h3 {
+  margin-bottom: 15px;
+  color: var(--visa-blue);
+  font-size: 18px;
+  font-weight: 700;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.vpp-section .form-group {
+  margin-bottom: 15px;
+}
+
+.step-section h3 {
+  margin-bottom: 20px;
+  color: var(--visa-blue);
+  font-size: 18px;
+  font-weight: 700;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.iframe-container {
+  margin: 20px 0;
+}
+
+iframe {
+  width: 100%;
+  height: 500px;
+  border: 1px solid var(--visa-light-gray);
+  border-radius: 4px;
+}
+
+.result-section {
+  margin: 30px 0;
+  padding: 20px;
+  background-color: #ffffff;
+  border: 1px solid var(--visa-light-gray);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.result-section h2 {
+  color: var(--visa-blue);
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.code-block {
+  background-color: #f8f9fa;
+  border: 1px solid var(--visa-light-gray);
+  padding: 20px;
+  margin: 15px 0;
+  border-radius: 4px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+.code-block h3 {
+  color: var(--visa-dark-gray);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.code-block pre {
+  color: var(--visa-dark-gray);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+.message {
+  margin: 20px 0;
+  padding: 15px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.message.error {
+  background-color: #f8d7da;
+  color: var(--visa-red);
+  border: 1px solid #f5c6cb;
+}
+
+.message.success {
+  background-color: #d4edda;
+  color: var(--visa-green);
+  border: 1px solid #c3e6cb;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--visa-dark-gray);
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: 0.5px;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: #ffffff;
+  color: var(--visa-dark-gray);
+  border: 2px solid var(--visa-light-gray);
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--visa-blue);
+  box-shadow: 0 0 0 2px rgba(20, 38, 136, 0.1);
+}
+
+.form-group small {
+  display: block;
+  margin-top: 5px;
+  color: var(--visa-red);
+  font-size: 12px;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+button[type="submit"] {
+  padding: 12px 24px;
+  background-color: var(--visa-blue);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+}
+
+button[type="submit"]:hover {
+  background-color: #0f1d6b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+button[type="submit"]:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+h1, h2, h3 {
+  margin-bottom: 20px;
+  color: var(--visa-blue);
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+#config-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+#config-page h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 30px;
+  color: var(--visa-blue);
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: 0.5px;
+}
+
+#config-message {
+  margin-top: 20px;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 120px;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.form-group textarea {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.verify-result {
+  margin-top: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.verify-result.success {
+  color: var(--visa-green);
+}
+
+.verify-result.error {
+  color: var(--visa-red);
+}
+
+.textarea-with-copy {
+  position: relative;
+  width: 100%;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 8px 16px;
+  background-color: var(--visa-blue);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  transition: all 0.3s ease;
+  z-index: 1;
+  letter-spacing: 0.5px;
+}
+
+.copy-btn:hover {
+  background-color: #0f1d6b;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.copy-btn:active {
+  transform: translateY(1px);
+}
+
+/* Add Visa-like header with logo */
+/* .header::before {
+  content: "Visa PA+VPP Demo";
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--visa-blue);
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  display: flex;
+  align-items: center;
+}
+
+/* Add subtle shadows and transitions for better UX */
+.step-section,
+.result-section,
+#config-page {
+  transition: box-shadow 0.3s ease;
+}
+
+.step-section:hover,
+.result-section:hover,
+#config-page:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Improve form elements */
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group select,
+.form-group textarea {
+  font-weight: 500;
+}
+
+/* Add focus styles */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(20, 38, 136, 0.2);
+}
