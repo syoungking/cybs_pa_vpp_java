@@ -15,8 +15,16 @@ public class ConfigManager {
             put("JWT_API_KEY_ID", "61a79c46a8bd2d6dd6ab521a");
             put("JWT_ORG_UNIT_ID", "61a79c46a8bd2d6dd6ab5219");
             put("JWT_SECRET", "af3aeed1-bac4-41f6-93e8-050eed0e1484");
+            put("merchant_id", "sean_sandbox_1730710277");
+            put("key_id", "ba8642fe-2969-4fa4-bb0c-06b33b2181de");
+            put("shared_secret_key", "BOl66V7NsFqJA099GcQE0JbUyb8Arh/hFfsPcdJbP3s=");
+            put("CYBS_CAS_SITE", "apitest.cybersource.com");
+            put("CYBS_PRD_SITE", "api.cybersource.com");
+            put("PA_SETUP", "/risk/v1/authentication-setups");
+            put("PA_ENROLL", "/risk/v1/authentications/");
+            put("PA_VALIDATE", "/risk/v1/authentication-results/");
             put("MERCHANT_ORIGIN", "https://demo.sean.io");
-            put("RETURN_URL", "https://demo.sean.io");
+            put("RETURN_URL", "https://localhost:8443/callback");
         }
     };
 
@@ -45,7 +53,10 @@ public class ConfigManager {
             Map<String, String> config = readConfig();
             String[] requiredFields = {
                 "SANDBOX_SITE", "PROD_SITE", "FIDO_INIT", "FIDO_CHALLENGE",
-                "JWT_API_KEY_ID", "JWT_ORG_UNIT_ID", "JWT_SECRET", "MERCHANT_ORIGIN", "RETURN_URL"
+                "JWT_API_KEY_ID", "JWT_ORG_UNIT_ID", "JWT_SECRET", 
+                "merchant_id", "key_id", "shared_secret_key",
+                "CYBS_CAS_SITE", "CYBS_PRD_SITE", "PA_SETUP", "PA_ENROLL", "PA_VALIDATE",
+                "MERCHANT_ORIGIN", "RETURN_URL"
             };
             
             for (String field : requiredFields) {

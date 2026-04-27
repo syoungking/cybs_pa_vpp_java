@@ -3,7 +3,9 @@ package com.example.pavppdemo.jwt;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 
+import java.security.Key;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -32,11 +34,12 @@ public class JwtManager {
             payload.put("Payload", innerPayload);
             
             // 生成JWS（签名）
+            Key key = Keys.hmacShaKeyFor(config.get("JWT_SECRET").getBytes());
             String jws = Jwts.builder()
                     .setHeaderParam("typ", "JWT")
                     .setHeaderParam("alg", "HS256")
                     .setClaims(payload)
-                    .signWith(SignatureAlgorithm.HS256, config.get("JWT_SECRET").getBytes())
+                    .signWith(key, SignatureAlgorithm.HS256)
                     .compact();
             
             Map<String, Object> result = new HashMap<>();
@@ -55,8 +58,10 @@ public class JwtManager {
     public static Claims verifyJWT(String jws, String secret) {
         try {
             // 验签
-            Claims decoded = Jwts.parser()
-                    .setSigningKey(secret.getBytes())
+            Key key = Keys.hmacShaKeyFor(secret.getBytes());
+            Claims decoded = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
                     .parseClaimsJws(jws)
                     .getBody();
             return decoded;
